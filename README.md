@@ -4,11 +4,10 @@
 [Singleton]
 Manages game loop.
 
-You can register
+You can register callbacks
 - Update
 - Fixed Update
 - Render
-callbacks.
 
 You can
 - Start
