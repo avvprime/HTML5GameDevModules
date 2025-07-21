@@ -2,7 +2,9 @@
 
 ## Clock
 [Singleton]
-Manages game loop. You can register
+Manages game loop.
+
+You can register
 - Update
 - Fixed Update
 - Render
