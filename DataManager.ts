@@ -6,6 +6,7 @@ class DataManager {
     
     private static _instance: DataManager;
     private _data: Record<string, any> = {
+        dataCheck: "", // will be used to check if any data exists or returns null from sdk
         firstTimePlay: "true",
         musicEnabled: "true",
         soundEnabled: "true",
@@ -22,9 +23,11 @@ class DataManager {
     public load(): void {
         console.log("Loading game save");
         if (SDKManager.instance.dataModuleAvailable) {
-            for (const key of Object.keys(this._data)) {
-                const item = SDKManager.instance.getItem(key);
-                this._data[key] = item == null ? this._data[key] : JSON.parse(item);
+            if (SDKManager.instance.getItem('dataCheck') != null) {
+                for (const key of Object.keys(this._data)) {
+                    const item = SDKManager.instance.getItem(key);
+                    this._data[key] = item == null ? this._data[key] : JSON.parse(item);
+                }
             }
         }
         else {
