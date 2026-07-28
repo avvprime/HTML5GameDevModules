@@ -62,7 +62,12 @@ class DataManager {
         return true;
     }
 
-    public saveItem(key: string, value: any): void {
+    public saveItem(key: string): void {
+        if (!(key in this._data)) {
+            console.warn("Couldn't find the key: ", key);
+            return;
+        }
+        const value = this._data[key];
         if (SDKManager.instance.dataModuleAvailable) {
             SDKManager.instance.setItem(key, JSON.stringify(value));
         }
