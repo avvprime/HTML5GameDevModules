@@ -1,0 +1,59 @@
+import SDKManager from "./SDKManager";
+
+const prefix: string = 'dragondash:';
+
+class DataManager {
+    
+    private static _instance: DataManager;
+    private _data: Record<string, any> = {
+        firstTimePlay: "true",
+        musicEnabled: "true",
+        soundEnabled: "true",
+        currentLevel: "1",
+    }
+
+    private constructor() {}
+
+    public static get instance(): DataManager {
+        if (!DataManager._instance) DataManager._instance = new DataManager();
+        return DataManager._instance;
+    }
+
+    public load(): void {
+        console.log("Loading game save");
+        if (SDKManager.instance.dataModuleAvailable) {
+            for (const key of Object.keys(this._data)) {
+                const item = SDKManager.instance.getItem(key);
+                this._data[key] = item == null ? this._data[key] : JSON.parse(item);
+            }
+        }
+        else {
+            for (const key of Object.keys(this._data)) {
+                const item = localStorage.getItem(prefix + key);
+                this._data[key] = item == null ? this._data[key] : JSON.parse(item);
+            }
+        }
+    }
+
+    public save(key: string, value: any): void {
+        if (SDKManager.instance.dataModuleAvailable) {
+            SDKManager.instance.setItem(key, JSON.stringify(value));
+        }
+        else {
+            localStorage.setItem(prefix + key, JSON.stringify(value));
+        }
+    }
+
+    public getItem(key: string): string {
+        return this._data[key];
+    }
+
+    public setItem(key: string, value: any): boolean {
+        if (!(key in this._data)) return false;
+
+        this._data[key] = value;
+        return true;
+    }
+}
+
+export const Data = DataManager.instance;
