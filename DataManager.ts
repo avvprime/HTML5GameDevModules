@@ -3,7 +3,7 @@ import SDKManager from "./SDKManager";
 const prefix: string = 'dragondash:';
 
 class DataManager {
-    
+
     private static _instance: DataManager;
     private _data: Record<string, any> = {
         dataCheck: "", // will be used to check if any data exists or returns null from sdk
@@ -13,7 +13,7 @@ class DataManager {
         currentLevel: "1",
     }
 
-    private constructor() {}
+    private constructor() { }
 
     public static get instance(): DataManager {
         if (!DataManager._instance) DataManager._instance = new DataManager();
@@ -38,12 +38,16 @@ class DataManager {
         }
     }
 
-    public save(key: string, value: any): void {
+    public save(): void {
         if (SDKManager.instance.dataModuleAvailable) {
-            SDKManager.instance.setItem(key, JSON.stringify(value));
+            for (const key of Object.keys(this._data)) {
+                SDKManager.instance.setItem(key, JSON.stringify(this._data[key]));
+            }
         }
         else {
-            localStorage.setItem(prefix + key, JSON.stringify(value));
+            for (const key of Object.keys(this._data)) {
+                localStorage.setItem(prefix + key, JSON.stringify(this._data[key]));
+            }
         }
     }
 
@@ -56,6 +60,15 @@ class DataManager {
 
         this._data[key] = value;
         return true;
+    }
+
+    public saveItem(key: string, value: any): void {
+        if (SDKManager.instance.dataModuleAvailable) {
+            SDKManager.instance.setItem(key, JSON.stringify(value));
+        }
+        else {
+            localStorage.setItem(prefix + key, JSON.stringify(value));
+        }
     }
 }
 
