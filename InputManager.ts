@@ -19,23 +19,50 @@ class InputManager {
     }
 
     private _key: any = {
-        Space: { down: false, pressed: false },
-        ArrowUp: { down: false, pressed: false }
+        ArrowUp: { down: false, pressed: false },
+        ArrowDown: { down: false, pressed: false },
+        ArrowLeft: { down: false, pressed: false },
+        ArrowRight: { down: false, pressed: false },
+        KeyW: { down: false, pressed: false },
+        KeyS: { down: false, pressed: false },
+        KeyA: { down: false, pressed: false },
+        KeyD: { down: false, pressed: false },
     }
 
-    private _keyList: string[] = ["Space", "ArrowUp"];
+    private _keyList: string[] = [
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "KeyW",
+        "KeyS",
+        "KeyA",
+        "KeyD"
+    ];
     private _keyMap: any = {
-        Up: ["Space", "ArrowUp"]
+        Up: ["ArrowUp", "KeyW"],
+        Down: ["ArrowDown", "KeyS"],
+        Left: ["ArrowLeft", "KeyA"],
+        Right: ["ArrowRight", "KeyD"]
     }
     private _revKeyMap: any = {
-        Space: "Up",
-        ArrowUp: "Up"
+        ArrowUp: "Up",
+        KeyW: "Up",
+
+        ArrowDown: "Down",
+        KeyS: "Down",
+
+        ArrowLeft: "Left",
+        KeyA: "Left",
+
+        ArrowRight: "Right",
+        KeyD: "Right"
     }
 
 
     private constructor() {
 
-         const hasTouchScreen = (
+        const hasTouchScreen = (
             'ontouchstart' in window || 
             navigator.maxTouchPoints > 0
         );
@@ -168,12 +195,9 @@ class InputManager {
         this._touch.position.y = touch.clientY;
     }
 
-    private onTouchEnd(e: TouchEvent): void {
-        const touch = e.touches[0];
-        
+    private onTouchEnd(_e: TouchEvent): void {
+        //const touch = e.touches[0];
         this._touch.down = false;
-        this._touch.position.x = touch.clientX;
-        this._touch.position.y = touch.clientY;
     }
 
     private onMouseDown(e: MouseEvent): void {
