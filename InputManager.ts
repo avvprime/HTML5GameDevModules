@@ -230,13 +230,13 @@ class InputManager {
     private onMouseUp(e: MouseEvent): void {
         switch (e.button) {
             case 0:
-                this._mouse.lmb.down = true;
+                this._mouse.lmb.down = false;
                 break;
             case 1: 
-                this._mouse.mmb.down = true;
+                this._mouse.mmb.down = false;
                 break;
             case 2:
-                this._mouse.rmb.down = true;
+                this._mouse.rmb.down = false;
                 break;
             default:
                 break;
