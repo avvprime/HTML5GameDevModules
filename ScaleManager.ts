@@ -231,6 +231,11 @@ export default class ScaleManager {
         this.handleResize();
     }
 
+    public register(canvas: HTMLCanvasElement, renderer: any): void {
+        this._canvas = canvas;
+        this._renderer = renderer;
+    }
+
     public connect(callback: (width: number, height: number) => void): void {
         this._callbacks.push(callback);
     }
