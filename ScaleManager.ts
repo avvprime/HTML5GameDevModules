@@ -5,7 +5,7 @@ function getDpr(): number {
 }
 
 
-export default class ResizeManager {
+export default class ScaleManager {
 
     private _clientWidth: number;
     private _clientHeight: number;
@@ -31,7 +31,7 @@ export default class ResizeManager {
     private _renderer: any;
 
 
-    private static _instance: ResizeManager;
+    private static _instance: ScaleManager;
 
 
     private constructor() {
@@ -184,9 +184,9 @@ export default class ResizeManager {
         this._renderer.resize(this._renderWidth, this._renderHeight);
     }
 
-    public static get instance(): ResizeManager {
-        if (!ResizeManager._instance) ResizeManager._instance = new ResizeManager();
-        return ResizeManager._instance;
+    public static get instance(): ScaleManager {
+        if (!ScaleManager._instance) ScaleManager._instance = new ScaleManager();
+        return ScaleManager._instance;
     }
 
     public get logicalSize(): { width: number, height: number} {
@@ -238,7 +238,7 @@ export default class ResizeManager {
     public disconnect(callback: (width: number, height: number) => void): void {
         const idx = this._callbacks.indexOf(callback);
         if (idx === -1) {
-            console.warn("ResizeManager: Callback already removed ", callback);
+            console.warn("ScaleManager: Callback already removed ", callback);
             return;
         }
 
