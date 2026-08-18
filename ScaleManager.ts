@@ -4,6 +4,7 @@ function getDpr(): number {
     return window.devicePixelRatio || 1;
 }
 
+type ScaleMode = 'stretch' | 'fit' | 'cover' | 'expand' | 'integer';
 
 export default class ScaleManager {
 
@@ -23,7 +24,7 @@ export default class ScaleManager {
     
     private _highDpiEnabled: boolean = false;
 
-    private _scaleMode: 'stretch' | 'fit' | 'cover' | 'expand' | 'integer' = 'fit';
+    private _scaleMode: ScaleMode = 'fit';
 
     private _scale: { x: number, y: number } = { x: 1, y: 1 }
     
@@ -40,8 +41,10 @@ export default class ScaleManager {
         this._clientWidth = window.innerWidth;
         this._clientHeight = window.innerHeight;
 
-        this._physicalWidth = window.innerWidth * (window.devicePixelRatio || 1);
-        this._physicalHeight = window.innerHeight * (window.devicePixelRatio || 1);
+        const dpr = getDpr();
+
+        this._physicalWidth = window.innerWidth * dpr;
+        this._physicalHeight = window.innerHeight * dpr;
 
         this._renderWidth = window.innerWidth;
         this._renderHeight = window.innerHeight; 
@@ -74,7 +77,7 @@ export default class ScaleManager {
 
         const width  = window.innerWidth  * (hiDpiEnabled ? dpr : 1);
         const height = window.innerHeight * (hiDpiEnabled ? dpr : 1);
-        
+
         switch (this._scaleMode) {
             case 'fit':
                 this.handleFitMode(width, height);
@@ -98,6 +101,11 @@ export default class ScaleManager {
         this._scale.x = this._renderWidth / this._logicalWidth;
         this._scale.y = this._renderHeight / this._logicalHeight;
 
+        this._canvas.style.width = this._renderWidth + 'px';
+        this._canvas.style.height = this._renderHeight + 'px';
+
+        this._renderer.resize(this._renderWidth, this._renderHeight);
+
         this.emitSignal();
     }
 
@@ -108,22 +116,12 @@ export default class ScaleManager {
 
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
-
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
         
     }
 
     private handleStretchMode(width: number, height: number): void {
         this._renderWidth = width;
         this._renderHeight = height;
-
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
     }
 
     private handleCoverMode(width: number, height: number): void {
@@ -133,21 +131,13 @@ export default class ScaleManager {
 
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
-
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
     }
 
     private handleExpandMode(width: number, height: number): void {
         this._renderWidth = width;
         this._renderHeight = height;
-
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
+        this._logicalWidth = width;
+        this._logicalHeight = height;
     }
 
     private handleIntegerMode(width: number, height: number): void {
@@ -157,11 +147,6 @@ export default class ScaleManager {
 
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
-
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
     }
 
     private emitSignal(): void {
@@ -201,7 +186,7 @@ export default class ScaleManager {
         return this._scale;
     }
 
-    public get scaleMode(): 'stretch' | 'fit' | 'cover' | 'expand' | 'integer' {
+    public get scaleMode(): ScaleMode {
         return this._scaleMode;
     }
 
@@ -212,7 +197,7 @@ export default class ScaleManager {
         this.handleResize();
     }
 
-    public setScaleMode(mode: 'stretch' | 'fit' | 'cover' | 'expand' | 'integer'): void {
+    public setScaleMode(mode: ScaleMode): void {
         this._scaleMode = mode;
         this.handleResize();
     }
