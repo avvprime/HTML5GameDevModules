@@ -13,6 +13,8 @@ export class ActiveList {
         return this._empty;
     }
 
+    public get length(): number { return this._list.length }
+
     public add(item: ActiveRef): void {
         if (item.currentlyActive) return;
 
@@ -26,29 +28,29 @@ export class ActiveList {
     }
 
     public remove(item: ActiveRef): void {
-    
+        if (item.idx === -1) return;
+        
         const lastItem = this._list.pop();
 
-        if (lastItem === undefined) return;
+        if (lastItem === undefined) return; 
 
-        if (item.idx === lastItem.idx) {
+        if (item === lastItem) {
             item.idx = -1;
             item.currentlyActive = false;
-            this._empty = true;
+            
+            if (this._list.length === 0) this._empty = true;
             return;
+
         }
 
         this._list[item.idx] = lastItem;
         lastItem.idx = item.idx;
         item.idx = -1;
         item.currentlyActive = false;
-
-        if (this._list.length === 0) this._empty = true;
     }
 
     public update(deltaMS: number): void {
-        const total = this._list.length;
-        for (let i = 0; i < total; i++) {
+        for (let i = this._list.length - 1; i > -1; i--) {
             this._list[i].update(deltaMS);
         }
     }
