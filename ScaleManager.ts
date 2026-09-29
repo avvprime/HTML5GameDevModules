@@ -4,9 +4,17 @@ function getDpr(): number {
     return window.devicePixelRatio || 1;
 }
 
-type ScaleMode = 'stretch' | 'fit' | 'cover' | 'expand' | 'integer';
+export const ScaleMode = {
+    Stretch: 0,
+    Fit: 1,
+    Cover: 2,
+    Expand: 3,
+    Integer: 4
+} as const;
 
-export default class ScaleManager {
+export type ScaleMode = keyof [typeof ScaleMode];
+
+export class ScaleManager {
 
     private _clientWidth: number;
     private _clientHeight: number;
@@ -24,7 +32,7 @@ export default class ScaleManager {
     
     private _highDpiEnabled: boolean = false;
 
-    private _scaleMode: ScaleMode = 'fit';
+    private _scaleMode: ScaleMode = ScaleMode.Fit;
 
     private _scale: { x: number, y: number } = { x: 1, y: 1 }
     
@@ -59,8 +67,8 @@ export default class ScaleManager {
         if (this._resized) return;
         this._resized = true;
         setTimeout(() => {
-            this.handleResize();
             this._resized = false;
+            this.handleResize();
         }, 100);
     }
 
@@ -79,19 +87,19 @@ export default class ScaleManager {
         const height = window.innerHeight * (hiDpiEnabled ? dpr : 1);
 
         switch (this._scaleMode) {
-            case 'fit':
+            case ScaleMode.Fit:
                 this.handleFitMode(width, height);
                 break;
-            case 'stretch':
+            case ScaleMode.Stretch:
                 this.handleStretchMode(width, height);
                 break;
-            case 'cover':
+            case ScaleMode.Cover:
                 this.handleCoverMode(width, height);
                 break;
-            case 'expand':
+            case ScaleMode.Expand:
                 this.handleExpandMode(width, height);
                 break;
-            case 'integer': 
+            case ScaleMode.Integer: 
                 this.handleIntegerMode(width, height);
                 break;
             default:    
@@ -101,11 +109,14 @@ export default class ScaleManager {
         this._scale.x = this._renderWidth / this._logicalWidth;
         this._scale.y = this._renderHeight / this._logicalHeight;
 
-        this._canvas.style.width = this._renderWidth + 'px';
-        this._canvas.style.height = this._renderHeight + 'px';
-
-        this._renderer.resize(this._renderWidth, this._renderHeight);
-
+        if (this._canvas !== undefined) {
+            this._canvas.style.width = this._renderWidth + 'px';
+            this._canvas.style.height = this._renderHeight + 'px';
+        }
+        if (this._renderer !== undefined) {
+            this._renderer.resize(this._renderWidth, this._renderHeight);
+        }
+        
         this.emitSignal();
     }
 
@@ -113,6 +124,9 @@ export default class ScaleManager {
         const scaleX = width / this._logicalWidth;
         const scaleY = height / this._logicalHeight;
         const factor = Math.min(scaleX, scaleY);
+
+        this._scale.x = factor;
+        this._scale.y = factor;
 
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
@@ -129,6 +143,9 @@ export default class ScaleManager {
         const scaleY = height / this._logicalHeight;
         const factor = Math.max(scaleX, scaleY);
 
+        this._scale.x = factor;
+        this._scale.y = factor;
+
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
     }
@@ -144,6 +161,9 @@ export default class ScaleManager {
         const scaleX = width / this._logicalWidth;
         const scaleY = height / this._logicalHeight;
         const factor = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
+
+        this._scale.x = factor;
+        this._scale.y = factor;
 
         this._renderWidth  = this._logicalWidth  * factor;
         this._renderHeight = this._logicalHeight * factor;
