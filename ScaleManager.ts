@@ -1,5 +1,3 @@
-
-
 function getDpr(): number {
     return window.devicePixelRatio || 1;
 }
@@ -12,7 +10,7 @@ export const ScaleMode = {
     Integer: 4
 } as const;
 
-export type ScaleMode = keyof [typeof ScaleMode];
+export type ScaleMode = (typeof ScaleMode)[keyof typeof ScaleMode];
 
 export class ScaleManager {
 
@@ -25,25 +23,30 @@ export class ScaleManager {
     private _renderWidth: number;
     private _renderHeight: number;
 
+    private _displayWidth: number;
+    private _displayHeight: number;
+
+    private _baseWidth: number;
+    private _baseHeight: number;
+
     private _logicalWidth: number;
     private _logicalHeight: number;
 
-    private _resized: boolean = false;
+    private _resizeTimer: ReturnType<typeof setTimeout> | null = null;
     
     private _highDpiEnabled: boolean = false;
 
     private _scaleMode: ScaleMode = ScaleMode.Fit;
 
-    private _scale: { x: number, y: number } = { x: 1, y: 1 }
-    
+    private _scale: { x: number, y: number } = { x: 1, y: 1 };
+    private _margin: { x: number, y: number } = { x: 0, y: 0 };
+
     private _callbacks: ((width: number, height: number) => void)[] = [];
     
     private _canvas!: HTMLCanvasElement;
     private _renderer: any;
 
-
     private static _instance: ScaleManager;
-
 
     private constructor() {
         this._clientWidth = window.innerWidth;
@@ -55,7 +58,13 @@ export class ScaleManager {
         this._physicalHeight = window.innerHeight * dpr;
 
         this._renderWidth = window.innerWidth;
-        this._renderHeight = window.innerHeight; 
+        this._renderHeight = window.innerHeight;
+
+        this._displayWidth = window.innerWidth;
+        this._displayHeight = window.innerHeight;
+
+        this._baseWidth = window.innerWidth;
+        this._baseHeight = window.innerHeight;
 
         this._logicalWidth = window.innerWidth;
         this._logicalHeight = window.innerHeight;
@@ -64,56 +73,72 @@ export class ScaleManager {
     }
 
     private onResize(): void {
-        if (this._resized) return;
-        this._resized = true;
-        setTimeout(() => {
-            this._resized = false;
+        if (this._resizeTimer !== null) {
+            clearTimeout(this._resizeTimer);
+        }
+        this._resizeTimer = setTimeout(() => {
+            this._resizeTimer = null;
             this.handleResize();
         }, 100);
     }
 
-    
     private handleResize(): void {
         this._clientWidth = window.innerWidth;
         this._clientHeight = window.innerHeight;
 
-        this._physicalWidth = window.innerWidth * (window.devicePixelRatio || 1);
-        this._physicalHeight = window.innerHeight * (window.devicePixelRatio || 1);
-
         const dpr = getDpr();
-        const hiDpiEnabled = this._highDpiEnabled;
 
-        const width  = window.innerWidth  * (hiDpiEnabled ? dpr : 1);
-        const height = window.innerHeight * (hiDpiEnabled ? dpr : 1);
+        this._physicalWidth = this._clientWidth * dpr;
+        this._physicalHeight = this._clientHeight * dpr;
+
+        if (this._scaleMode !== ScaleMode.Expand) {
+            this._logicalWidth = this._baseWidth;
+            this._logicalHeight = this._baseHeight;
+        }
 
         switch (this._scaleMode) {
             case ScaleMode.Fit:
-                this.handleFitMode(width, height);
+                this.handleFitMode(this._clientWidth, this._clientHeight);
                 break;
             case ScaleMode.Stretch:
-                this.handleStretchMode(width, height);
+                this.handleStretchMode(this._clientWidth, this._clientHeight);
                 break;
             case ScaleMode.Cover:
-                this.handleCoverMode(width, height);
+                this.handleCoverMode(this._clientWidth, this._clientHeight);
                 break;
             case ScaleMode.Expand:
-                this.handleExpandMode(width, height);
+                this.handleExpandMode(this._clientWidth, this._clientHeight);
                 break;
             case ScaleMode.Integer: 
-                this.handleIntegerMode(width, height);
+                this.handleIntegerMode(this._clientWidth, this._clientHeight);
                 break;
             default:    
                 break;
         }
 
+        const effectiveDpr = this._highDpiEnabled ? dpr : 1;
+
+        this._renderWidth = Math.round(this._displayWidth * effectiveDpr);
+        this._renderHeight = Math.round(this._displayHeight * effectiveDpr);
+
         this._scale.x = this._renderWidth / this._logicalWidth;
         this._scale.y = this._renderHeight / this._logicalHeight;
 
         if (this._canvas !== undefined) {
-            this._canvas.style.width = this._renderWidth + 'px';
-            this._canvas.style.height = this._renderHeight + 'px';
+            this._canvas.style.width = this._displayWidth + 'px';
+            this._canvas.style.height = this._displayHeight + 'px';
+
+            const mx = (this._clientWidth - this._displayWidth) / 2;
+            const my = (this._clientHeight - this._displayHeight) / 2;
+
+            this._canvas.style.marginLeft = mx + 'px';
+            this._canvas.style.marginTop = my + 'px';
+
+            this._margin.x = mx;
+            this._margin.y = my;
         }
-        if (this._renderer !== undefined) {
+
+        if (this._renderer !== undefined && typeof this._renderer.resize === 'function') {
             this._renderer.resize(this._renderWidth, this._renderHeight);
         }
         
@@ -125,17 +150,13 @@ export class ScaleManager {
         const scaleY = height / this._logicalHeight;
         const factor = Math.min(scaleX, scaleY);
 
-        this._scale.x = factor;
-        this._scale.y = factor;
-
-        this._renderWidth  = this._logicalWidth  * factor;
-        this._renderHeight = this._logicalHeight * factor;
-        
+        this._displayWidth = this._logicalWidth * factor;
+        this._displayHeight = this._logicalHeight * factor;
     }
 
     private handleStretchMode(width: number, height: number): void {
-        this._renderWidth = width;
-        this._renderHeight = height;
+        this._displayWidth = width;
+        this._displayHeight = height;
     }
 
     private handleCoverMode(width: number, height: number): void {
@@ -143,16 +164,13 @@ export class ScaleManager {
         const scaleY = height / this._logicalHeight;
         const factor = Math.max(scaleX, scaleY);
 
-        this._scale.x = factor;
-        this._scale.y = factor;
-
-        this._renderWidth  = this._logicalWidth  * factor;
-        this._renderHeight = this._logicalHeight * factor;
+        this._displayWidth = this._logicalWidth * factor;
+        this._displayHeight = this._logicalHeight * factor;
     }
 
     private handleExpandMode(width: number, height: number): void {
-        this._renderWidth = width;
-        this._renderHeight = height;
+        this._displayWidth = width;
+        this._displayHeight = height;
         this._logicalWidth = width;
         this._logicalHeight = height;
     }
@@ -162,17 +180,14 @@ export class ScaleManager {
         const scaleY = height / this._logicalHeight;
         const factor = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
 
-        this._scale.x = factor;
-        this._scale.y = factor;
-
-        this._renderWidth  = this._logicalWidth  * factor;
-        this._renderHeight = this._logicalHeight * factor;
+        this._displayWidth = this._logicalWidth * factor;
+        this._displayHeight = this._logicalHeight * factor;
     }
 
     private emitSignal(): void {
-        const totalCallbacks = this._callbacks.length;
-        for (let i = 0; i < totalCallbacks; i++) {
-            this._callbacks[i](this._renderWidth, this._renderHeight);
+        const callbacks = [...this._callbacks];
+        for (let i = 0; i < callbacks.length; i++) {
+            callbacks[i](this._renderWidth, this._renderHeight);
         }
     }
 
@@ -181,29 +196,36 @@ export class ScaleManager {
         return ScaleManager._instance;
     }
 
-    public get logicalSize(): { width: number, height: number} {
-        return { width: this._logicalWidth, height: this._logicalHeight }
+    public triggerResize(): void {
+        this.handleResize();
     }
 
-    public get clientSize(): { width: number, height: number} {
-        return { width: this._clientWidth, height: this._clientHeight }
+    public get margin(): { x: number, y: number } {
+        return { x: this._margin.x, y: this._margin.y };
     }
 
-    public get physicalSize(): { width: number, height: number} {
-        return { width: this._physicalWidth, height: this._physicalHeight }
+    public get logicalSize(): { width: number, height: number } {
+        return { width: this._logicalWidth, height: this._logicalHeight };
     }
 
-    public get renderSize(): { width: number, height: number} {
-        return { width: this._renderWidth, height: this._renderHeight }
+    public get clientSize(): { width: number, height: number } {
+        return { width: this._clientWidth, height: this._clientHeight };
+    }
+
+    public get physicalSize(): { width: number, height: number } {
+        return { width: this._physicalWidth, height: this._physicalHeight };
+    }
+
+    public get renderSize(): { width: number, height: number } {
+        return { width: this._renderWidth, height: this._renderHeight };
     }    
 
-    // It is actually same with logical size but it's here to avoid confusion
     public get size(): { width: number, height: number } {
-        return { width: this._logicalWidth, height: this._logicalHeight }
+        return { width: this._logicalWidth, height: this._logicalHeight };
     }
 
     public get scale(): { x: number, y: number } {
-        return this._scale;
+        return { x: this._scale.x, y: this._scale.y };
     }
 
     public get scaleMode(): ScaleMode {
@@ -211,20 +233,18 @@ export class ScaleManager {
     }
 
     public setBaseSize(width: number, height: number): void {
+        this._baseWidth = width;
+        this._baseHeight = height;
         this._logicalWidth = width;
         this._logicalHeight = height;
-        
-        this.handleResize();
     }
 
     public setScaleMode(mode: ScaleMode): void {
         this._scaleMode = mode;
-        this.handleResize();
     }
 
     public setHiDpi(value: boolean): void {
         this._highDpiEnabled = value;
-        this.handleResize();
     }
 
     public register(canvas: HTMLCanvasElement, renderer: any): void {
