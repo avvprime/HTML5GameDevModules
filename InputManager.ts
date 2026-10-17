@@ -287,7 +287,6 @@ class InputManager {
         const ratio = ScaleManager.instance.scale.x;
         item.position.x = (x - margin.x) / ratio;
         item.position.y = (y - margin.y) / ratio;
-        console.log(margin)
     }
 }
 
